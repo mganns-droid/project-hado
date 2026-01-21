@@ -204,23 +204,11 @@
             };
 
             const speakGemini = async (text, voiceProfile = "Leda") => {
-                const isPreview = window.location.hostname.includes('canvas') || window.location.hostname.includes('googleusercontent') || window.location.hostname === 'localhost';
-                const proxyUrl = '/.netlify/functions/tts';
-                const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-
-                try {
+        try {
                     if (activeAudioRef.current) activeAudioRef.current.pause();
 
-                    const response = await fetch(isPreview ? directUrl : proxyUrl, {
-                        method: 'POST',
-                        body: JSON.stringify(isPreview ? {
-                            contents: [{ parts: [{ text: text }] }],
-                            generationConfig: { 
-                                responseModalities: ["AUDIO"], 
-                                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceProfile } } } 
-                            },
-                            model: "gemini-2.5-flash-preview-tts"
-                        } : { text, voiceProfile }),
+            const response = await fetch('/.netlify/functions/tts', {                        method: 'POST',
+                body: JSON.stringify({ text, voiceProfile }),                            contents: [{ parts: [{ text: text }] }],
                         headers: { 'Content-Type': 'application/json' }
                     });
 
@@ -574,4 +562,5 @@
         root.render(<App />);
     </script>
 </body>
+
 </html>
