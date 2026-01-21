@@ -1,6 +1,6 @@
 // Project Hado: Secure Neural TTS Proxy
 // Purpose: Routes high-fidelity voice requests to Gemini while shielding the API key.
-// Profiles: "Leda" (Female/Narrative) | "Charon" (Male/Grounding)
+// Profiles: Enhanced voice quality with prompts for natural, grounding speech
 
 exports.handler = async (event) => {
   // Only allow POST requests for voice synthesis
@@ -19,10 +19,15 @@ exports.handler = async (event) => {
       };
     }
 
-    // Explicit Voice Enforcement
-    // "Leda" = Professional Female Narrative
-    // "Charon" = Calming Male Rhythmic Session
-    const targetVoice = voiceProfile === 'Charon' ? 'Charon' : 'Leda';
+    // Enhanced Voice Selection with proven, natural-sounding voices
+    // Orus: Deep, mature male voice - calm and grounding (better than Charon for meditation)
+    // Despina: Warm, clear female voice - soothing and trustworthy (better than Leda for guidance)
+    const targetVoice = voiceProfile === 'Charon' ? 'Orus' : 'Despina';
+    
+    // Speech prompt to control delivery style - crucial for natural sound
+    const speechPrompt = voiceProfile === 'Charon' 
+      ? 'Speak in a slow, calm, and deeply grounding tone with gentle authority. Use a smooth, steady pace suitable for meditation and breathing guidance.'
+      : 'Speak in a warm, soothing, and clear tone with gentle reassurance. Use a calm, steady pace suitable for relaxation and mindful breathing.';
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
 
@@ -30,7 +35,12 @@ exports.handler = async (event) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: text }] }],
+        contents: [{
+          parts: [
+            { text: speechPrompt },  // Add prompt first for style control
+            { text: text }
+          ]
+        }],
         generationConfig: {
           responseModalities: ['AUDIO'],
           speechConfig: {
