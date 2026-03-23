@@ -134,7 +134,7 @@
             const masterGain = useRef(null);
             const activeAudioRef = useRef(null); 
             const isInit = useRef(false);
-            const apiKey = ""; // Workspace Injection
+            const apiKey = ""; // Server-side via Netlify
 
             const stop = useCallback(() => {
                 if (masterGain.current && audioCtx.current) {
@@ -208,7 +208,7 @@
                     if (activeAudioRef.current) activeAudioRef.current.pause();
 
             const response = await fetch('/.netlify/functions/tts', {                        method: 'POST',
-                body: JSON.stringify({ text, voiceProfile }),                            contents: [{ parts: [{ text: text }] }],
+                body: JSON.stringify({ text, voiceProfile }),                           
                         headers: { 'Content-Type': 'application/json' }
                     });
 
