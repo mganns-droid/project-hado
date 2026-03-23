@@ -343,8 +343,6 @@
             const [isMuted, setIsMuted] = useState(false);
             const audio = useHadoAudio();
             const step = technique.pattern[stepIdx];
-            const countingInterval = useRef(null);
-
             const handleRhythmicGuidance = useCallback((currentStep) => {
                 if (isMuted) return;
                 // Enforce Grounding Male voice (Charon) for counting sessions
@@ -373,12 +371,12 @@
             }, [audio, technique.id, isMuted]);
 
             useEffect(() => {
-                if (!isActive) { audio.stop(); if (countingInterval.current) clearInterval(countingInterval.current); return; }
+                if (!isActive) { audio.stop(); return; }
                 const current = technique.pattern[stepIdx];
                 audio.updateSound(current.action, current.duration, isMuted);
                 handleRhythmicGuidance(current);
                 const timer = setTimeout(() => { setStepIdx(prev => (prev + 1) % technique.pattern.length); }, current.duration);
-                return () => { clearTimeout(timer); if (countingInterval.current) clearInterval(countingInterval.current); };
+                return () => { clearTimeout(timer); };
             }, [isActive, stepIdx, isMuted, technique, audio, handleRhythmicGuidance]);
 
             const renderVisual = () => {
