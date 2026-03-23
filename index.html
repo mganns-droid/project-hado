@@ -371,12 +371,12 @@
             }, [audio, technique.id, isMuted]);
 
             useEffect(() => {
-                if (!isActive) { audio.stop(); return; }
+                if (!isActive) { audio.stop(); if (countingInterval.current) clearInterval(countingInterval.current); return; }
                 const current = technique.pattern[stepIdx];
                 audio.updateSound(current.action, current.duration, isMuted);
                 handleRhythmicGuidance(current);
                 const timer = setTimeout(() => { setStepIdx(prev => (prev + 1) % technique.pattern.length); }, current.duration);
-                return () => { clearTimeout(timer); };
+                return () => { clearTimeout(timer); if (countingInterval.current) clearInterval(countingInterval.current); };
             }, [isActive, stepIdx, isMuted, technique, audio, handleRhythmicGuidance]);
 
             const renderVisual = () => {
