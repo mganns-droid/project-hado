@@ -282,7 +282,7 @@
                 return null;
             };
 
-            return { init, updateSound, speakLocal, speakGemini, fetchClip, playClip, stop };
+            return { init, updateSound, speakLocal, speakGemini, fetchClip, playClip, playTick, stop };
         };
 
         // --- Dataset ---
@@ -394,7 +394,6 @@
             const step = technique.pattern[stepIdx];
             const countingInterval = useRef(null);
 
-            const NUM_WORDS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
             const cueText = useCallback((currentStep) => {
                 if (technique.id === 'sigh') {
                     if (currentStep.action === 'Deep Inhale') return 'Deep inhale through the nose';
@@ -404,33 +403,26 @@
                 return currentStep.action;
             }, [technique.id]);
 
-            // Prefetch every cue and count clip once so playback during the
-            // session is instant and can be scheduled on the clock — spoken
-            // counts land exactly one per second, in step with the visuals.
+            // Prefetch each action cue once so it plays instantly at phase start.
             useEffect(() => {
                 const cues = new Set();
-                let maxCount = 0;
-                technique.pattern.forEach(s => {
-                    cues.add(cueText(s));
-                    const secs = Math.floor(s.duration / 1000);
-                    if (secs >= 3) maxCount = Math.max(maxCount, secs);
-                });
+                technique.pattern.forEach(s => cues.add(cueText(s)));
                 cues.forEach(c => audio.fetchClip(c, "Charon"));
-                for (let i = 2; i <= maxCount && i < NUM_WORDS.length; i++) audio.fetchClip(NUM_WORDS[i], "Charon");
             }, [technique, audio, cueText]);
 
             const handleRhythmicGuidance = useCallback((currentStep) => {
                 if (isMuted) return;
-                // The action cue is beat one; cached number clips play at each
-                // subsequent one-second boundary, matching the visual duration.
+                // The spoken cue marks the start of the phase (beat one); a soft
+                // chime marks every subsequent second, driven by the same clock
+                // as the visuals, so the rhythm always matches the animation.
                 audio.playClip(cueText(currentStep), "Charon");
                 const totalSeconds = Math.floor(currentStep.duration / 1000);
-                if (totalSeconds >= 3) {
+                if (totalSeconds >= 2) {
                     let count = 1;
                     countingInterval.current = setInterval(() => {
                         if (count < totalSeconds) {
                             count++;
-                            audio.playClip(NUM_WORDS[count] || String(count), "Charon");
+                            audio.playTick();
                         } else {
                             clearInterval(countingInterval.current);
                         }
