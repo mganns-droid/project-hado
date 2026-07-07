@@ -9,15 +9,17 @@ exports.handler = async (event) => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) { return { statusCode: 500, headers, body: JSON.stringify({ error: 'GEMINI_API_KEY not set' }) }; }
     const voice = voiceProfile === 'Charon' ? 'Charon' : 'Aoede';
-    const systemPrompt = voiceProfile === 'Charon'
-      ? 'You are a meditation guide leading a breathing practice. Speak in a slow, natural, human rhythm with meaningful pauses between each count. Your voice is warm, calm, and deeply reassuring — never robotic. Let each number breathe with silence around it. Speak as if you are breathing alongside the listener.'
-      : 'You are a warm, nurturing meditation narrator. Speak softly and soothingly, as if gently guiding someone toward stillness. Use a natural flowing cadence with generous pauses between thoughts. Your presence is calming and deeply human.';
+    // TTS models are text-in/audio-out only — systemInstruction is not supported and
+    // rejects the request. Style is set by a short leading directive in the prompt
+    // itself, which the model interprets rather than reads aloud ("Say cheerfully: ...").
+    const styledText = voiceProfile === 'Charon'
+      ? `Say very slowly and calmly, in a warm deep reassuring meditation-guide voice, with a long unhurried pause between every word and number: ${text}`
+      : `Say softly and soothingly, like a warm nurturing meditation narrator, with a gentle unhurried cadence and natural pauses between sentences: ${text}`;
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text }] }],
+        contents: [{ parts: [{ text: styledText }] }],
         generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } },
         model: 'gemini-2.5-flash-preview-tts'
       })
