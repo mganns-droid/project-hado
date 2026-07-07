@@ -132,9 +132,9 @@
         const useHadoAudio = () => {
             const audioCtx = useRef(null);
             const masterGain = useRef(null);
-            const activeAudioRef = useRef(null); 
+            const activeAudioRef = useRef(null);
             const isInit = useRef(false);
-            const apiKey = ""; // Server-side via Netlify
+            const clipCache = useRef(new Map()); // "profile|text" -> Promise<objectURL|null>
 
             const stop = useCallback(() => {
                 if (masterGain.current && audioCtx.current) {
@@ -203,6 +203,55 @@
                 window.speechSynthesis.speak(utterance);
             };
 
+            // Soft chime fallback for session cues when neural audio is unavailable —
+            // never the robotic system voice mid-session.
+            const playTick = useCallback(() => {
+                if (!audioCtx.current) return;
+                const ctx = audioCtx.current;
+                const osc = ctx.createOscillator();
+                const g = ctx.createGain();
+                osc.type = 'sine'; osc.frequency.value = 660;
+                g.gain.setValueAtTime(0.0001, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+                osc.connect(g); g.connect(ctx.destination);
+                osc.start(); osc.stop(ctx.currentTime + 0.4);
+            }, []);
+
+            // Fetch a short speech clip once and cache the object URL, so session
+            // cues and counts play instantly and can be scheduled on the clock.
+            const fetchClip = useCallback((text, voiceProfile = "Charon") => {
+                const key = `${voiceProfile}|${text}`;
+                if (clipCache.current.has(key)) return clipCache.current.get(key);
+                const promise = (async () => {
+                    const response = await fetch('/.netlify/functions/tts', {
+                        method: 'POST',
+                        body: JSON.stringify({ text, voiceProfile }),
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    if (!response.ok) throw new Error(`Fetch Error: ${response.status}`);
+                    const result = await response.json();
+                    const audioData = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                    if (!audioData) throw new Error('No audio data');
+                    return pcmToWav(audioData);
+                })().catch(err => {
+                    console.warn(`[HADO] Clip fetch failed for "${text}":`, err.message);
+                    clipCache.current.delete(key); // allow retry on next request
+                    return null;
+                });
+                clipCache.current.set(key, promise);
+                return promise;
+            }, []);
+
+            const playClip = useCallback(async (text, voiceProfile = "Charon") => {
+                const url = await fetchClip(text, voiceProfile);
+                if (!url) { playTick(); return; }
+                if (activeAudioRef.current) activeAudioRef.current.pause();
+                const audio = new Audio(url);
+                activeAudioRef.current = audio;
+                audio.play().catch(() => playTick());
+            }, [fetchClip, playTick]);
+
             const speakGemini = async (text, voiceProfile = "Leda") => {
         try {
                     if (activeAudioRef.current) activeAudioRef.current.pause();
@@ -233,7 +282,7 @@
                 return null;
             };
 
-            return { init, updateSound, speakLocal, speakGemini, stop };
+            return { init, updateSound, speakLocal, speakGemini, fetchClip, playClip, stop };
         };
 
         // --- Dataset ---
@@ -344,20 +393,50 @@
             const audio = useHadoAudio();
             const step = technique.pattern[stepIdx];
             const countingInterval = useRef(null);
+
+            const NUM_WORDS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+            const cueText = useCallback((currentStep) => {
+                if (technique.id === 'sigh') {
+                    if (currentStep.action === 'Deep Inhale') return 'Deep inhale through the nose';
+                    if (currentStep.action === 'Top Up') return 'And top up';
+                    if (currentStep.action === 'Exhale') return 'Long exhale through the mouth';
+                }
+                return currentStep.action;
+            }, [technique.id]);
+
+            // Prefetch every cue and count clip once so playback during the
+            // session is instant and can be scheduled on the clock — spoken
+            // counts land exactly one per second, in step with the visuals.
+            useEffect(() => {
+                const cues = new Set();
+                let maxCount = 0;
+                technique.pattern.forEach(s => {
+                    cues.add(cueText(s));
+                    const secs = Math.floor(s.duration / 1000);
+                    if (secs >= 3) maxCount = Math.max(maxCount, secs);
+                });
+                cues.forEach(c => audio.fetchClip(c, "Charon"));
+                for (let i = 2; i <= maxCount && i < NUM_WORDS.length; i++) audio.fetchClip(NUM_WORDS[i], "Charon");
+            }, [technique, audio, cueText]);
+
             const handleRhythmicGuidance = useCallback((currentStep) => {
                 if (isMuted) return;
+                // The action cue is beat one; cached number clips play at each
+                // subsequent one-second boundary, matching the visual duration.
+                audio.playClip(cueText(currentStep), "Charon");
                 const totalSeconds = Math.floor(currentStep.duration / 1000);
-                const counts = totalSeconds >= 3
-                    ? '... ' + Array.from({ length: totalSeconds }, (_, i) => i + 1).join('... ')
-                    : '';
-                if (technique.id === 'sigh') {
-                    if (currentStep.action === 'Deep Inhale') audio.speakGemini('Deep inhale... one... two... three... four... five', 'Charon');
-                    else if (currentStep.action === 'Top Up') audio.speakGemini('And top up', 'Charon');
-                    else if (currentStep.action === 'Exhale') audio.speakGemini('Long exhale... one... two... three... four... five... six... seven... eight', 'Charon');
-                    return;
+                if (totalSeconds >= 3) {
+                    let count = 1;
+                    countingInterval.current = setInterval(() => {
+                        if (count < totalSeconds) {
+                            count++;
+                            audio.playClip(NUM_WORDS[count] || String(count), "Charon");
+                        } else {
+                            clearInterval(countingInterval.current);
+                        }
+                    }, 1000);
                 }
-                audio.speakGemini(`${currentStep.action}${counts}`, 'Charon');
-            }, [audio, technique.id, isMuted]);
+            }, [audio, cueText, isMuted]);
 
             useEffect(() => {
                 if (!isActive) { audio.stop(); if (countingInterval.current) clearInterval(countingInterval.current); return; }
