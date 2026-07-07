@@ -343,31 +343,20 @@
             const [isMuted, setIsMuted] = useState(false);
             const audio = useHadoAudio();
             const step = technique.pattern[stepIdx];
+            const countingInterval = useRef(null);
             const handleRhythmicGuidance = useCallback((currentStep) => {
                 if (isMuted) return;
-                // Enforce Grounding Male voice (Charon) for counting sessions
+                const totalSeconds = Math.floor(currentStep.duration / 1000);
+                const counts = totalSeconds >= 3
+                    ? '... ' + Array.from({ length: totalSeconds }, (_, i) => i + 1).join('... ')
+                    : '';
                 if (technique.id === 'sigh') {
-                    if (currentStep.action === 'Deep Inhale') audio.speakGemini("Deep inhale through the nose", "Charon");
-                    if (currentStep.action === 'Top Up') audio.speakGemini("And top up, sharp inhale", "Charon");
-                    if (currentStep.action === 'Exhale') audio.speakGemini("Long exhale through the mouth", "Charon");
-                    if (currentStep.action === 'Deep Inhale') {
-                        let count = 1;
-                        countingInterval.current = setInterval(() => {
-                            if (count < 5) { count++; audio.speakGemini(count.toString(), "Charon"); }
-                            else { clearInterval(countingInterval.current); }
-                        }, 1000);
-                    }
+                    if (currentStep.action === 'Deep Inhale') audio.speakGemini('Deep inhale... one... two... three... four... five', 'Charon');
+                    else if (currentStep.action === 'Top Up') audio.speakGemini('And top up', 'Charon');
+                    else if (currentStep.action === 'Exhale') audio.speakGemini('Long exhale... one... two... three... four... five... six... seven... eight', 'Charon');
                     return;
                 }
-                audio.speakGemini(currentStep.action, "Charon");
-                const totalSeconds = Math.floor(currentStep.duration / 1000);
-                if (totalSeconds >= 3) {
-                    let count = 1;
-                    countingInterval.current = setInterval(() => {
-                        if (count < totalSeconds) { count++; audio.speakGemini(count.toString(), "Charon"); }
-                        else { clearInterval(countingInterval.current); }
-                    }, 1000);
-                }
+                audio.speakGemini(`${currentStep.action}${counts}`, 'Charon');
             }, [audio, technique.id, isMuted]);
 
             useEffect(() => {
@@ -381,35 +370,66 @@
 
             const renderVisual = () => {
                 const duration = `${isActive ? step.duration : 500}ms`;
+
                 if (technique.id === 'box') {
+                    const isFullLungs = stepIdx === 0 || stepIdx === 1;
+                    const corners = [
+                        { top: '-4px', left: '-4px' },
+                        { top: '-4px', right: '-4px' },
+                        { bottom: '-4px', right: '-4px' },
+                        { bottom: '-4px', left: '-4px' },
+                    ];
                     return (
                         <div className="box-container flex items-center justify-center">
-                            {/* Static keys ensure browser animates the change in width/height rather than remounting the div */}
-                            <div key="box-0" className={`tracer-line ${stepIdx === 0 && isActive ? 'active' : ''}`} style={{ top: 0, left: 0, height: '3px', width: stepIdx === 0 && isActive ? '100%' : '0%', '--duration': duration }} />
-                            <div key="box-1" className={`tracer-line ${stepIdx === 1 && isActive ? 'active' : ''}`} style={{ top: 0, right: 0, width: '3px', height: stepIdx === 1 && isActive ? '100%' : '0%', '--duration': duration }} />
-                            <div key="box-2" className={`tracer-line ${stepIdx === 2 && isActive ? 'active' : ''}`} style={{ bottom: 0, right: 0, height: '3px', width: stepIdx === 2 && isActive ? '100%' : '0%', transformOrigin: 'right', '--duration': duration }} />
-                            <div key="box-3" className={`tracer-line ${stepIdx === 3 && isActive ? 'active' : ''}`} style={{ bottom: 0, left: 0, width: '3px', height: stepIdx === 3 && isActive ? '100%' : '0%', transformOrigin: 'bottom', '--duration': duration }} />
+                            <div style={{ position: 'absolute', inset: '16px', borderRadius: '2px', background: `rgba(34,211,238,${isActive && isFullLungs ? 0.045 : 0.008})`, transition: 'background 2s ease-in-out', pointerEvents: 'none' }} />
+                            {corners.map((pos, i) => (
+                                <div key={`corner-${i}`} style={{ position: 'absolute', width: '7px', height: '7px', borderRadius: '1px', background: stepIdx === i && isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.12)', boxShadow: stepIdx === i && isActive ? '0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.3)' : 'none', transition: 'background 0.3s ease, box-shadow 0.3s ease', ...pos }} />
+                            ))}
+                            <div key="box-0" className={`tracer-line ${stepIdx === 0 && isActive ? 'active' : ''}`} style={{ top: 0, left: 0, height: '2px', width: stepIdx === 0 && isActive ? '100%' : '0%', '--duration': duration }} />
+                            <div key="box-1" className={`tracer-line ${stepIdx === 1 && isActive ? 'active' : ''}`} style={{ top: 0, right: 0, width: '2px', height: stepIdx === 1 && isActive ? '100%' : '0%', '--duration': duration }} />
+                            <div key="box-2" className={`tracer-line ${stepIdx === 2 && isActive ? 'active' : ''}`} style={{ bottom: 0, right: 0, height: '2px', width: stepIdx === 2 && isActive ? '100%' : '0%', transformOrigin: 'right', '--duration': duration }} />
+                            <div key="box-3" className={`tracer-line ${stepIdx === 3 && isActive ? 'active' : ''}`} style={{ bottom: 0, left: 0, width: '2px', height: stepIdx === 3 && isActive ? '100%' : '0%', transformOrigin: 'bottom', '--duration': duration }} />
                         </div>
                     );
                 }
+
                 if (technique.id === 'alt-nostril' || technique.id === 'left-nostril') {
                     const isLeft = step.action.includes('Left') || technique.id === 'left-nostril';
                     const inhale = step.action.includes('Inhale') || step.action === 'Top Up';
                     return (
-                        <div className="flex gap-10 items-end h-60 w-60 relative border-b border-white/5 pb-4 px-6 font-sans">
-                             <div className="flex-1 bg-white/[0.02] rounded-t-[3rem] overflow-hidden relative h-full border border-white/5">
-                                <div className="absolute bottom-0 w-full bg-amber-400/40 chamber-fill" style={{ height: isLeft && inhale ? '100%' : isLeft ? '25%' : '10%', '--duration': duration, opacity: isLeft ? 1 : 0.05 }} />
-                             </div>
-                             <div className="flex-1 bg-white/[0.02] rounded-t-[3rem] overflow-hidden relative h-full border border-white/5">
-                                <div className="absolute bottom-0 w-full bg-amber-400/40 chamber-fill" style={{ height: !isLeft && inhale ? '100%' : !isLeft ? '25%' : '10%', '--duration': duration, opacity: !isLeft ? 1 : 0.05 }} />
-                             </div>
+                        <div className="flex flex-col items-center">
+                            <div className="flex gap-10 items-end h-60 w-60 relative border-b border-white/5 pb-4 px-6">
+                                <div className="flex-1 rounded-t-[3rem] overflow-hidden relative h-full border border-white/5 bg-white/[0.02]" style={{ boxShadow: isLeft && isActive ? '0 0 32px rgba(251,191,36,0.12)' : 'none', transition: 'box-shadow 0.5s ease' }}>
+                                    <div className="absolute bottom-0 w-full chamber-fill" style={{ height: isLeft && inhale ? '100%' : isLeft ? '25%' : '10%', '--duration': duration, opacity: isLeft ? 1 : 0.05, background: 'linear-gradient(to top, rgba(251,191,36,0.65) 0%, rgba(251,191,36,0.18) 100%)' }} />
+                                </div>
+                                <div className="flex-1 rounded-t-[3rem] overflow-hidden relative h-full border border-white/5 bg-white/[0.02]" style={{ boxShadow: !isLeft && isActive ? '0 0 32px rgba(251,191,36,0.12)' : 'none', transition: 'box-shadow 0.5s ease' }}>
+                                    <div className="absolute bottom-0 w-full chamber-fill" style={{ height: !isLeft && inhale ? '100%' : !isLeft ? '25%' : '10%', '--duration': duration, opacity: !isLeft ? 1 : 0.05, background: 'linear-gradient(to top, rgba(251,191,36,0.65) 0%, rgba(251,191,36,0.18) 100%)' }} />
+                                </div>
+                            </div>
+                            <div className="flex gap-10 w-60 px-6 mt-3">
+                                <div className="flex-1 text-center" style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', color: isLeft ? 'rgba(251,191,36,0.65)' : 'rgba(255,255,255,0.15)', transition: 'color 0.4s ease' }}>Left</div>
+                                <div className="flex-1 text-center" style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', color: !isLeft ? 'rgba(251,191,36,0.65)' : 'rgba(255,255,255,0.15)', transition: 'color 0.4s ease' }}>Right</div>
+                            </div>
                         </div>
                     );
                 }
-                const scale = step.action.includes('Inhale') || step.action === 'Top Up' ? 1.6 : 1.0;
+
+                /* Circle breathing — coherent (violet), sigh (rose), relax (emerald) */
+                const colorMap = { coherent: '#8b5cf6', sigh: '#fb7185', relax: '#34d399' };
+                const c = colorMap[technique.id] || '#94a3b8';
+                /* Hold keeps lungs full → stay expanded */
+                const isExpanded = step.action.includes('Inhale') || step.action === 'Top Up' || step.action === 'Hold';
+                const scale = isExpanded ? 1.6 : 1.0;
                 return (
-                    <div className="w-60 h-60 rounded-full border border-white/10 bg-white/5 shadow-[0_0_80px_rgba(255,255,255,0.03)] relative flex items-center justify-center breathing-shape" style={{ transform: `scale(${scale})`, '--duration': duration }}>
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/10 to-transparent animate-pulse" />
+                    <div className="relative w-60 h-60">
+                        {/* Blurred colour aura */}
+                        <div className="breathing-shape absolute rounded-full" style={{ inset: '-20%', background: `radial-gradient(circle, ${c}28 0%, transparent 65%)`, filter: 'blur(24px)', transform: `scale(${scale})`, '--duration': duration }} />
+                        {/* Outer halo ring */}
+                        <div className="breathing-shape absolute rounded-full" style={{ inset: '-10%', border: `1px solid ${c}18`, transform: `scale(${scale})`, '--duration': duration }} />
+                        {/* Main circle */}
+                        <div className="breathing-shape absolute inset-0 rounded-full" style={{ border: `1px solid ${c}50`, background: `radial-gradient(circle at 38% 32%, ${c}22 0%, rgba(255,255,255,0.02) 70%)`, boxShadow: `0 0 80px ${c}18, inset 0 0 40px ${c}10`, transform: `scale(${scale})`, '--duration': duration }} />
+                        {/* Centre glow dot */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full" style={{ background: c, boxShadow: `0 0 16px ${c}`, opacity: isActive ? 0.7 : 0.25, transition: 'opacity 0.5s ease' }} />
                     </div>
                 );
             };
