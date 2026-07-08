@@ -559,11 +559,15 @@
                         <div className="text-center font-sans">
                             <a href="https://www.psychandlifestyle.com" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
                                 <h1 className="text-3xl font-extralight tracking-[0.3em] leading-none font-sans">HADO</h1>
-                                <p className="text-[10px] uppercase tracking-[0.5em] text-slate-500 font-black font-sans font-sans font-sans">Resonance & Breath</p>
+                                <p className="text-[10px] uppercase tracking-[0.5em] text-slate-500 font-black font-sans mt-4">Resonance & Breath</p>
                             </a>
                         </div>
                     </div>
                     <button onClick={onBackToIntro} className="p-4 rounded-full bg-slate-900 border border-slate-800 text-slate-600 hover:text-cyan-400 transition-colors shadow-2xl font-sans"><Home size={22}/></button>
+                    <div className="max-w-3xl p-8 rounded-[2rem] bg-amber-950/10 border border-amber-900/30 text-left">
+                        <p className="text-amber-400 uppercase tracking-widest text-[11px] font-black mb-3 flex items-center gap-2"><AlertCircle size={15}/> Important Note</p>
+                        <p className="text-sm text-slate-300 leading-relaxed font-light">Some people, especially if they are used to very shallow breathing, may find it challenging to change their breath and can feel dizzy, light-headed, breathless, or uncomfortable when they try new breathing exercises. Please go slowly: start gently, keep the pace comfortable, and pause or return to your normal breathing whenever you need to. If any practice makes you feel worse in a sustained way (for example, increasing dizziness, chest discomfort, strong anxiety, or confusion), stop the exercise and talk with a suitably qualified health professional about whether and how to continue, rather than pushing through on your own.</p>
+                    </div>
                 </header>
                 <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 pb-12 font-sans font-sans">
                     {TECHNIQUES.map(t => (
