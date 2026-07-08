@@ -107,8 +107,9 @@
 
         const GlobalDisclaimer = ({ lightMode = false }) => (
             <div className={`w-full py-8 text-center px-6 ${lightMode ? 'text-white/40' : 'text-slate-500'}`}>
-                <p className="text-[10px] leading-relaxed max-w-2xl mx-auto uppercase tracking-widest font-bold opacity-70 font-sans">
-                    Psych and Lifestyle Disclaimer: Educational use only. Consult clinical professionals for medical guidance.
+                <p className="text-[10px] uppercase tracking-widest font-black opacity-80 mb-3 font-sans">For Education Purposes Only</p>
+                <p className="text-[11px] leading-relaxed max-w-2xl mx-auto font-light opacity-80 font-sans">
+                    The information and techniques on this site are provided by Psych and Lifestyle for general education and wellbeing. They are not medical or psychological advice, and are not a substitute for diagnosis, treatment, or care from a qualified health professional. Breathing exercises are generally safe, but stop if you feel dizzy or unwell, and check with your doctor first if you are pregnant or have a heart, blood pressure, or respiratory condition.
                 </p>
             </div>
         );
@@ -423,8 +424,25 @@
                         <iframe src="https://player.vimeo.com/video/1139753900?h=bf031d93c3&title=0&byline=0&portrait=0" className="absolute inset-0 w-full h-full" frameBorder="0" allow="autoplay; fullscreen" />
                     </div>
                     <div className="grid md:grid-cols-2 gap-8 animate-in slide-up">
-                        <div className="p-10 rounded-[2.5rem] bg-rose-950/10 border border-rose-900/20 text-left"><h3 className="text-rose-400 mb-4 flex items-center gap-3 uppercase tracking-widest text-xs font-black"><Zap size={18}/> Stress Response</h3><p className="text-sm text-slate-300 leading-relaxed font-light">Thoracic breathing keeps the system locked in high-arousal reactive cognitive patterns.</p></div>
-                        <div className="p-10 rounded-[2.5rem] bg-emerald-950/10 border border-emerald-900/20 text-left"><h3 className="text-emerald-400 mb-4 flex items-center gap-3 uppercase tracking-widest text-xs font-black"><Brain size={18}/> Recovery State</h3><p className="text-sm text-slate-300 leading-relaxed font-light">Diaphragmatic modulation signals safety to the brainstem, enabling executive functioning.</p></div>
+                        <div className="p-10 rounded-[2.5rem] bg-rose-950/10 border border-rose-900/20 text-left">
+                            <h3 className="text-rose-400 mb-4 flex items-center gap-3 uppercase tracking-widest text-xs font-black"><Zap size={18}/> Stress Response</h3>
+                            <p className="text-sm text-slate-300 leading-relaxed font-light">When you are stressed, your breathing becomes fast, shallow, and high in the chest — often without you even noticing. This kind of breathing tells your brain that something is wrong, so it keeps stress hormones flowing and your body stuck on high alert. Racing thoughts, tense shoulders, a pounding heart, and poor sleep tend to follow — and because stress changes your breathing and your breathing feeds the stress, the cycle keeps itself going.</p>
+                        </div>
+                        <div className="p-10 rounded-[2.5rem] bg-emerald-950/10 border border-emerald-900/20 text-left">
+                            <h3 className="text-emerald-400 mb-4 flex items-center gap-3 uppercase tracking-widest text-xs font-black"><Brain size={18}/> Recovery State</h3>
+                            <p className="text-sm text-slate-300 leading-relaxed font-light">Slow, deep breathing into the belly does the opposite — it sends a physical signal to your brain that you are safe. Your heart rate settles, stress hormones fall, muscles loosen, and the clear-thinking part of your brain comes back online. The best part is that this works in both directions: you cannot always control your thoughts, but you can always control your breath, and your body will follow it within a few minutes.</p>
+                        </div>
+                    </div>
+                    <div className="p-10 md:p-12 rounded-[2.5rem] bg-slate-900/60 border border-slate-800 text-left animate-in slide-up space-y-5">
+                        <h3 className="text-cyan-400 flex items-center gap-3 uppercase tracking-widest text-xs font-black"><Wind size={18}/> What's Inside the Toolkit</h3>
+                        <p className="text-sm text-slate-300 leading-relaxed font-light">Six evidence-based breathing techniques, each chosen for a different situation — from calming panic in under a minute, to focusing under pressure, to falling asleep faster. Each technique has its own page with:</p>
+                        <ul className="space-y-3 text-sm text-slate-300 font-light">
+                            <li className="flex items-start gap-3"><CheckCircle2 className="text-cyan-500 shrink-0 mt-0.5" size={16}/><span>A plain-English explanation of what the technique is and exactly how to do it</span></li>
+                            <li className="flex items-start gap-3"><CheckCircle2 className="text-cyan-500 shrink-0 mt-0.5" size={16}/><span>Why it helps and what is happening in your body when you practise it</span></li>
+                            <li className="flex items-start gap-3"><CheckCircle2 className="text-cyan-500 shrink-0 mt-0.5" size={16}/><span>A short instructional video you can follow along with</span></li>
+                            <li className="flex items-start gap-3"><CheckCircle2 className="text-cyan-500 shrink-0 mt-0.5" size={16}/><span>References for further reading, including easy-read guides and the research behind each technique</span></li>
+                        </ul>
+                        <p className="text-sm text-slate-400 leading-relaxed font-light">Browse the six techniques, pick the one that matches how you are feeling, and start with just five minutes.</p>
                     </div>
                     <button onClick={onComplete} className="px-12 py-5 bg-white text-slate-950 rounded-full font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-[0_20px_60px_rgba(255,255,255,0.1)]">Open Breathing Toolkit <ChevronRight className="inline ml-1" size={18}/></button>
                     <GlobalDisclaimer />
@@ -439,11 +457,8 @@
         };
 
         const Detail = ({ technique, onBack }) => {
-            const [isPlayingGuide, setIsPlayingGuide] = useState(false);
-            const [isLoadingGuide, setIsLoadingGuide] = useState(false);
             const [copied, setCopied] = useState(false);
             const [showShare, setShowShare] = useState(false);
-            const sensory = useHadoAudio();
 
             const shareUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}#detail/${technique.id}`;
 
@@ -453,23 +468,13 @@
                 document.body.removeChild(el);
             };
 
-            const playExplanation = async () => {
-                if (isPlayingGuide) { sensory.stop(); setIsPlayingGuide(false); return; }
-                setIsLoadingGuide(true);
-                // Enforce Female Narrative voice (Leda) for overviews
-                const audioObj = await sensory.speakGemini(technique.auditoryExplanation, "Leda");
-                setIsLoadingGuide(false);
-                if (audioObj) { setIsPlayingGuide(true); audioObj.onended = () => setIsPlayingGuide(false); }
-            };
-
             return (
                 <div className="min-h-screen bg-slate-950 p-6 md:p-12 animate-in fade-in overflow-y-auto font-sans text-white font-sans">
                     <div className="max-w-5xl mx-auto space-y-20 pb-16">
                         <div className="flex justify-between items-center flex-wrap gap-4 font-sans">
-                            <button onClick={() => { sensory.stop(); onBack(); }} className="flex items-center gap-4 text-slate-500 hover:text-white uppercase text-[11px] tracking-[0.4em] font-black transition-colors font-sans"><X size={18}/> Return to Menu</button>
+                            <button onClick={onBack} className="flex items-center gap-4 text-slate-500 hover:text-white uppercase text-[11px] tracking-[0.4em] font-black transition-colors font-sans"><X size={18}/> Return to Menu</button>
                             <div className="flex gap-4">
                                 <button onClick={() => setShowShare(!showShare)} className={`flex items-center gap-3 px-6 py-3 rounded-full border transition-all uppercase text-[10px] tracking-widest font-black bg-slate-900 border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 font-sans`}><Share2 size={16} /> Share</button>
-                                <button onClick={playExplanation} disabled={isLoadingGuide} className={`flex items-center gap-3 px-6 py-3 rounded-full border transition-all uppercase text-[10px] tracking-widest font-black ${isPlayingGuide ? 'bg-cyan-900/40 border-cyan-400 text-cyan-400' : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'} font-sans`}>{isLoadingGuide ? <Loader2 className="animate-spin" size={16} /> : isPlayingGuide ? <VolumeX size={16} /> : <Headphones size={16} />} {isLoadingGuide ? "Initialising..." : isPlayingGuide ? "Stop Guide" : "Listen to Guide"}</button>
                             </div>
                         </div>
                         {showShare && (
@@ -485,22 +490,6 @@
                                     <p className={`text-2xl font-light tracking-wide ${technique.color}`}>{technique.tagline}</p>
                                 </div>
                                 <p className="text-slate-300 leading-relaxed text-2xl font-extralight italic border-l-2 border-white/5 pl-10 font-sans italic font-sans">"{technique.description}"</p>
-                                <div className="border-t border-white/5 pt-8 mt-4">
-                                    <p className="text-[10px] text-slate-500 italic uppercase tracking-widest mb-4 font-black leading-none">References & Further Reading:</p>
-                                    <ul className="space-y-4">
-                                        {(technique.references || []).map((ref, i) => (
-                                            <li key={i} className="text-[11px] text-slate-400 leading-relaxed font-light">
-                                                {ref.type === 'guide' && <span className="inline-block mr-2 mb-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest align-middle">Easy-read guide</span>}
-                                                {ref.url
-                                                    ? <a href={ref.url} target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 underline decoration-white/15 underline-offset-2 transition-colors">{ref.label}</a>
-                                                    : ref.label}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </div>
-                            <div className="space-y-8 font-sans">
-                                <div className="p-10 rounded-[2.5rem] bg-slate-900/40 border border-slate-800/60 space-y-6 shadow-2xl font-sans"><h4 className="flex items-center gap-3 text-cyan-400 uppercase text-[11px] tracking-[0.3em] font-black font-sans"><Microscope size={18}/> Physiological Mechanism</h4><p className="text-sm text-slate-300 leading-relaxed font-light font-sans">{technique.science}</p></div>
                                 <div className="p-10 rounded-[2.5rem] bg-slate-900/40 border border-slate-800/60 space-y-5 shadow-2xl">
                                     <h4 className="flex items-center gap-3 text-rose-400 uppercase text-[11px] tracking-[0.3em] font-black">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
@@ -523,6 +512,22 @@
                                         Video credit: the original creator, hosted on YouTube — <a href={technique.videoUrl} target="_blank" rel="noopener noreferrer" className="text-rose-300 hover:text-white underline decoration-white/15 underline-offset-2 transition-colors">watch on YouTube</a>
                                     </p>
                                 </div>
+                                <div className="border-t border-white/5 pt-8 mt-4">
+                                    <p className="text-[10px] text-slate-500 italic uppercase tracking-widest mb-4 font-black leading-none">References & Further Reading:</p>
+                                    <ul className="space-y-4">
+                                        {(technique.references || []).map((ref, i) => (
+                                            <li key={i} className="text-[11px] text-slate-400 leading-relaxed font-light">
+                                                {ref.type === 'guide' && <span className="inline-block mr-2 mb-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest align-middle">Easy-read guide</span>}
+                                                {ref.url
+                                                    ? <a href={ref.url} target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 underline decoration-white/15 underline-offset-2 transition-colors">{ref.label}</a>
+                                                    : ref.label}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                            <div className="space-y-8 font-sans">
+                                <div className="p-10 rounded-[2.5rem] bg-slate-900/40 border border-slate-800/60 space-y-6 shadow-2xl font-sans"><h4 className="flex items-center gap-3 text-cyan-400 uppercase text-[11px] tracking-[0.3em] font-black font-sans"><Microscope size={18}/> Physiological Mechanism</h4><p className="text-sm text-slate-300 leading-relaxed font-light font-sans">{technique.science}</p></div>
                                 <div className="p-10 rounded-[2.5rem] bg-slate-900/40 border border-slate-800/60 space-y-4 shadow-2xl">
                                     <h4 className="flex items-center gap-3 text-violet-400 uppercase text-[11px] tracking-[0.3em] font-black">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
