@@ -595,6 +595,9 @@
             const [view, setView] = useState('intro');
             const [activeTech, setActiveTech] = useState(null);
             const sensory = useHadoAudio();
+            // Views swap in place, so reset scroll or the new page inherits the
+            // old page's scroll offset (e.g. opening a technique mid-page).
+            useEffect(() => { window.scrollTo(0, 0); }, [view, activeTech]);
             useEffect(() => {
                 const h = () => {
                     const hash = window.location.hash.slice(1);
